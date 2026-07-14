@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutriBot – AI Nutrition Agent | IBM Watsonx</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<!-- ══════════════════  NAVBAR  ══════════════════ -->
+<nav class="navbar navbar-expand-lg sticky-top" id="mainNav">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+      <div class="brand-icon"><i class="bi bi-activity"></i></div>
+      <span class="brand-name">Nutri<span class="text-accent">Bot</span></span>
+      <span class="badge ibm-badge ms-1">IBM Watsonx</span>
+    </a>
+
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      <!-- Dark mode toggle -->
+      <button class="btn btn-icon" id="themeToggle" title="Toggle dark mode">
+        <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+      </button>
+      <!-- Auth buttons (guest state) -->
+      <div class="auth-guest-btns d-flex gap-2" id="authGuestBtns">
+        <button class="btn btn-auth-login" id="navLoginBtn">Log In</button>
+        <button class="btn btn-auth-signup" id="navSignupBtn">Sign Up</button>
+      </div>
+      <!-- User avatar (logged-in state, hidden by default) -->
+      <div class="user-menu d-none" id="userMenu">
+        <div class="user-avatar-btn" id="userAvatarBtn">
+          <div class="user-avatar" id="userAvatarDisplay">U</div>
+          <span class="user-name-nav" id="userNameNav">User</span>
+          <i class="bi bi-chevron-down" style="font-size:11px;color:var(--text-muted)"></i>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="user-dropdown-header">
+            <div class="ud-avatar" id="udAvatar">U</div>
+            <div>
+              <div class="ud-name" id="udName">User</div>
+              <div class="ud-email" id="udEmail">user@email.com</div>
+            </div>
+          </div>
+          <div class="user-dropdown-divider"></div>
+          <a class="ud-item" href="#" onclick="showSection('dashboard');closeDropdown()"><i class="bi bi-speedometer2"></i>Dashboard</a>
+          <a class="ud-item" href="#" onclick="showSection('chat');closeDropdown()"><i class="bi bi-chat-dots"></i>My Chat</a>
+          <a class="ud-item" href="#" onclick="openEditProfile();closeDropdown()"><i class="bi bi-person-gear"></i>Edit Profile</a>
+          <div class="user-dropdown-divider"></div>
+          <a class="ud-item ud-logout" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i>Log Out</a>
+        </div>
+      </div>
+      <!-- Mobile nav toggle -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <i class="bi bi-list"></i>
+      </button>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item"><a class="nav-link" href="#" data-section="chat"><i class="bi bi-chat-dots me-1"></i>Chat</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-section="dashboard"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-section="meal-planner"><i class="bi bi-calendar3 me-1"></i>Meal Planner</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-section="bmi"><i class="bi bi-bar-chart-line me-1"></i>BMI</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-section="family"><i class="bi bi-people me-1"></i>Family</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-section="analyze"><i class="bi bi-search me-1"></i>Analyze</a></li>
+        <!-- Mobile-only auth links -->
+        <li class="nav-item d-lg-none mt-2 auth-mobile-guest" id="mobileGuestLinks">
+          <div class="d-flex gap-2">
+            <button class="btn btn-auth-login flex-grow-1" id="mobileLoginBtn">Log In</button>
+            <button class="btn btn-auth-signup flex-grow-1" id="mobileSignupBtn">Sign Up</button>
+          </div>
+        </li>
+        <li class="nav-item d-lg-none mt-2 d-none" id="mobileLogoutLink">
+          <a class="nav-link text-danger" href="#" id="mobileLogoutBtn"><i class="bi bi-box-arrow-right me-1"></i>Log Out</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════  HERO BANNER  ══════════════════ -->
+<section class="hero-section" id="hero">
+  <div class="hero-bg-pattern"></div>
+  <div class="container py-5">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="hero-badge mb-3 animate-fade-up">
+          <i class="bi bi-cpu me-1"></i> Powered by IBM Granite AI
+        </div>
+        <h1 class="hero-title animate-fade-up delay-1">
+          Your Personal<br /><span class="text-gradient">AI Nutrition</span><br />Coach
+        </h1>
+        <p class="hero-subtitle animate-fade-up delay-2">
+          Personalised meal plans, Indian diet expertise, family nutrition tracking,
+          calorie analysis — all powered by IBM Watsonx Granite AI.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mt-4 animate-fade-up delay-3">
+          <button class="btn btn-primary-custom btn-lg" onclick="showSection('chat')">
+            <i class="bi bi-chat-dots me-2"></i>Start Chatting
+          </button>
+          <button class="btn btn-outline-custom btn-lg" onclick="showSection('dashboard')">
+            <i class="bi bi-speedometer2 me-2"></i>View Dashboard
+          </button>
+        </div>
+        <!-- Quick stat chips -->
+        <div class="d-flex flex-wrap gap-3 mt-4 animate-fade-up delay-4">
+          <div class="stat-chip"><i class="bi bi-lightning-charge-fill"></i> Instant Plans</div>
+          <div class="stat-chip"><i class="bi bi-heart-fill"></i> Indian Cuisine AI</div>
+          <div class="stat-chip"><i class="bi bi-people-fill"></i> Family Profiles</div>
+          <div class="stat-chip"><i class="bi bi-shield-check-fill"></i> Safe &amp; Private</div>
+        </div>
+      </div>
+      <div class="col-lg-5 d-none d-lg-flex justify-content-center">
+        <div class="hero-illustration">
+          <div class="float-card card-1"><i class="bi bi-egg-fried"></i><span>320 kcal</span></div>
+          <div class="float-card card-2"><i class="bi bi-droplet-fill"></i><span>2L Water</span></div>
+          <div class="float-card card-3"><i class="bi bi-graph-up-arrow"></i><span>Goal Track</span></div>
+          <div class="central-icon"><i class="bi bi-activity"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════  DAILY TIP BANNER  ══════════════════ -->
+<div class="tip-banner" id="tipBanner">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-lightbulb-fill tip-icon"></i>
+      <p class="mb-0 flex-grow-1" id="tipText">Loading today's nutrition tip…</p>
+      <button class="btn btn-sm btn-tip-refresh" id="refreshTip" title="New tip">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════  MAIN CONTENT  ══════════════════ -->
+<main class="main-content">
+  <div class="container-fluid px-3 px-md-4">
+
+    <!-- ──────────  CHAT SECTION  ────────── -->
+    <section class="content-section" id="section-chat">
+      <div class="row g-4">
+        <!-- Chat window -->
+        <div class="col-lg-8">
+          <div class="card-custom h-100 d-flex flex-column">
+            <div class="card-header-custom">
+              <div class="d-flex align-items-center gap-3">
+                <div class="avatar-bot"><i class="bi bi-robot"></i></div>
+                <div>
+                  <h5 class="mb-0">NutriBot</h5>
+                  <div class="online-badge"><span class="dot"></span>Online · IBM Granite AI</div>
+                </div>
+                <div class="ms-auto d-flex gap-2">
+                  <button class="btn btn-icon-sm" id="clearChat" title="Clear chat">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                  <button class="btn btn-icon-sm" id="exportChat" title="Export chat">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+              <!-- Welcome message injected by JS -->
+            </div>
+            <!-- Quick prompts -->
+            <div class="quick-prompts" id="quickPrompts">
+              <button class="quick-btn" data-prompt="Create a 7-day Indian vegetarian meal plan for weight loss">7-Day Meal Plan</button>
+              <button class="quick-btn" data-prompt="What should I eat for breakfast as a diabetic Indian?">Diabetic Breakfast</button>
+              <button class="quick-btn" data-prompt="High protein Indian foods for muscle building">High Protein Foods</button>
+              <button class="quick-btn" data-prompt="Healthy Indian snacks under 200 calories">Low-Cal Snacks</button>
+              <button class="quick-btn" data-prompt="Best Indian foods for PCOS management">PCOS Diet</button>
+              <button class="quick-btn" data-prompt="How much ghee is healthy per day?">Ghee &amp; Health</button>
+            </div>
+            <!-- Input bar -->
+            <div class="chat-input-bar">
+              <div class="input-wrapper">
+                <textarea class="chat-input" id="chatInput" rows="1"
+                  placeholder="Ask about nutrition, Indian meals, diet plans…"></textarea>
+                <div class="input-actions">
+                  <button class="btn btn-send" id="sendBtn">
+                    <i class="bi bi-send-fill"></i>
+                  </button>
+                </div>
+              </div>
+              <p class="input-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile sidebar -->
+        <div class="col-lg-4">
+          <div class="card-custom mb-4">
+            <div class="card-header-custom">
+              <h6 class="mb-0"><i class="bi bi-person-circle me-2"></i>My Profile</h6>
+            </div>
+            <div class="card-body-custom">
+              <div class="mb-3">
+                <label class="form-label-custom">Name</label>
+                <input type="text" class="form-control-custom" id="profileName" placeholder="Your name" />
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label-custom">Age</label>
+                  <input type="number" class="form-control-custom" id="profileAge" placeholder="25" min="1" max="120" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">Gender</label>
+                  <select class="form-control-custom" id="profileGender">
+                    <option value="">Select</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-2 mt-1">
+                <div class="col-6">
+                  <label class="form-label-custom">Weight (kg)</label>
+                  <input type="number" class="form-control-custom" id="profileWeight" placeholder="65" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">Height (cm)</label>
+                  <input type="number" class="form-control-custom" id="profileHeight" placeholder="165" />
+                </div>
+              </div>
+              <div class="mt-2">
+                <label class="form-label-custom">Diet Type</label>
+                <select class="form-control-custom" id="profileDiet">
+                  <option value="vegetarian">Vegetarian</option>
+                  <option value="vegan">Vegan</option>
+                  <option value="non-vegetarian">Non-Vegetarian</option>
+                  <option value="jain">Jain</option>
+                  <option value="eggetarian">Eggetarian</option>
+                </select>
+              </div>
+              <div class="mt-2">
+                <label class="form-label-custom">Health Goal</label>
+                <select class="form-control-custom" id="profileGoal">
+                  <option value="weight_loss">Weight Loss</option>
+                  <option value="muscle_gain">Muscle Gain</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="balanced">Balanced Health</option>
+                </select>
+              </div>
+              <div class="mt-2">
+                <label class="form-label-custom">Allergies / Restrictions</label>
+                <input type="text" class="form-control-custom" id="profileAllergies"
+                  placeholder="e.g. dairy, gluten, nuts" />
+              </div>
+              <button class="btn btn-primary-custom w-100 mt-3" id="saveProfile">
+                <i class="bi bi-check2-circle me-2"></i>Save Profile
+              </button>
+            </div>
+          </div>
+
+          <!-- Nutrition quick stats -->
+          <div class="card-custom" id="nutritionStats" style="display:none">
+            <div class="card-header-custom">
+              <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Your Daily Targets</h6>
+            </div>
+            <div class="card-body-custom">
+              <div class="macro-bar-group" id="macroDisplay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────  DASHBOARD SECTION  ────────── -->
+    <section class="content-section d-none" id="section-dashboard">
+      <div class="section-header mb-4">
+        <h2><i class="bi bi-speedometer2 me-2 text-accent"></i>Nutrition Dashboard</h2>
+        <p class="text-muted">Your personalised health overview</p>
+      </div>
+      <div class="row g-4" id="dashboardContent">
+        <!-- KPI cards -->
+        <div class="col-sm-6 col-xl-3">
+          <div class="kpi-card kpi-calories">
+            <div class="kpi-icon"><i class="bi bi-fire"></i></div>
+            <div class="kpi-label">Daily Calories</div>
+            <div class="kpi-value" id="kpiCalories">–</div>
+            <div class="kpi-sub">kcal / day</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="kpi-card kpi-protein">
+            <div class="kpi-icon"><i class="bi bi-egg-fill"></i></div>
+            <div class="kpi-label">Protein Target</div>
+            <div class="kpi-value" id="kpiProtein">–</div>
+            <div class="kpi-sub">grams / day</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="kpi-card kpi-carbs">
+            <div class="kpi-icon"><i class="bi bi-grid-fill"></i></div>
+            <div class="kpi-label">Carbs Target</div>
+            <div class="kpi-value" id="kpiCarbs">–</div>
+            <div class="kpi-sub">grams / day</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="kpi-card kpi-fat">
+            <div class="kpi-icon"><i class="bi bi-droplet-half"></i></div>
+            <div class="kpi-label">Fat Target</div>
+            <div class="kpi-value" id="kpiFat">–</div>
+            <div class="kpi-sub">grams / day</div>
+          </div>
+        </div>
+
+        <!-- Macro ring chart -->
+        <div class="col-lg-5">
+          <div class="card-custom">
+            <div class="card-header-custom">
+              <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Macro Distribution</h6>
+            </div>
+            <div class="card-body-custom d-flex justify-content-center align-items-center" style="min-height:260px">
+              <div class="macro-ring-container">
+                <svg id="macroRingSvg" viewBox="0 0 200 200" width="200" height="200">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="var(--border)" stroke-width="28"/>
+                  <circle id="ringProtein" cx="100" cy="100" r="80" fill="none"
+                    stroke="#6366f1" stroke-width="28" stroke-dasharray="0 502" stroke-linecap="round"
+                    transform="rotate(-90 100 100)"/>
+                  <circle id="ringCarbs" cx="100" cy="100" r="80" fill="none"
+                    stroke="#f59e0b" stroke-width="28" stroke-dasharray="0 502" stroke-linecap="round"
+                    transform="rotate(-90 100 100)"/>
+                  <circle id="ringFat" cx="100" cy="100" r="80" fill="none"
+                    stroke="#10b981" stroke-width="28" stroke-dasharray="0 502" stroke-linecap="round"
+                    transform="rotate(-90 100 100)"/>
+                  <text x="100" y="96" text-anchor="middle" class="ring-label-main" id="ringCenter">–</text>
+                  <text x="100" y="114" text-anchor="middle" class="ring-label-sub">kcal</text>
+                </svg>
+                <div class="ring-legend">
+                  <div class="legend-item"><span class="dot-legend" style="background:#6366f1"></span>Protein</div>
+                  <div class="legend-item"><span class="dot-legend" style="background:#f59e0b"></span>Carbs</div>
+                  <div class="legend-item"><span class="dot-legend" style="background:#10b981"></span>Fat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indian food suggestions -->
+        <div class="col-lg-7">
+          <div class="card-custom h-100">
+            <div class="card-header-custom">
+              <h6 class="mb-0"><i class="bi bi-stars me-2"></i>Recommended Indian Meals</h6>
+            </div>
+            <div class="card-body-custom">
+              <div class="row g-3" id="mealSuggestions">
+                <div class="col-12 text-center text-muted py-4">
+                  <i class="bi bi-arrow-left-circle fs-2 d-block mb-2"></i>
+                  Save your profile to see personalised recommendations
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hydration tracker -->
+        <div class="col-md-6 col-lg-4">
+          <div class="card-custom">
+            <div class="card-header-custom">
+              <h6 class="mb-0"><i class="bi bi-droplet me-2"></i>Hydration Tracker</h6>
+            </div>
+            <div class="card-body-custom">
+              <div class="hydration-tracker">
+                <div class="hydration-visual" id="hydrationVisual"></div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <span id="hydrationCount" class="hydration-count">0 / 8 glasses</span>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-icon-sm" id="hydrationMinus"><i class="bi bi-dash-lg"></i></button>
+                    <button class="btn btn-primary-custom btn-sm" id="hydrationPlus">
+                      <i class="bi bi-plus-lg me-1"></i>Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI tips card -->
+        <div class="col-md-6 col-lg-8">
+          <div class="card-custom">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-cpu me-2"></i>AI Nutrition Insights</h6>
+              <button class="btn btn-icon-sm" id="refreshInsight"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body-custom">
+              <div id="aiInsightText" class="insight-text">
+                <div class="skeleton-loader">
+                  <div class="skeleton-line"></div>
+                  <div class="skeleton-line short"></div>
+                  <div class="skeleton-line"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────  MEAL PLANNER SECTION  ────────── -->
+    <section class="content-section d-none" id="section-meal-planner">
+      <div class="section-header mb-4">
+        <h2><i class="bi bi-calendar3 me-2 text-accent"></i>AI Meal Planner</h2>
+        <p class="text-muted">Get personalised Indian meal plans generated by AI</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card-custom">
+            <div class="card-header-custom">
+              <h6 class="mb-0"><i class="bi bi-sliders me-2"></i>Plan Settings</h6>
+            </div>
+            <div class="card-body-custom">
+              <div class="mb-3">
+                <label class="form-label-custom">Number of Days</label>
+                <div class="day-selector" id="daySelector">
+                  <button class="day-btn active" data-days="1">1 Day</button>
+                  <button class="day-btn" data-days="3">3 Days</button>
+                  <button class="day-btn" data-days="5">5 Days</button>
+                  <button class="day-btn" data-days="7">7 Days</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label-custom">Diet Preference</label>
+                <select class="form-control-custom" id="planDiet">
+                  <option value="Indian vegetarian">Indian Vegetarian</option>
+                  <option value="Indian vegan">Indian Vegan</option>
+                  <option value="Indian non-vegetarian">Indian Non-Veg</option>
+                  <option value="South Indian">South Indian</option>
+                  <option value="North Indian">North Indian</option>
+                  <option value="Jain">Jain</option>
+                  <option value="Diabetic-friendly Indian">Diabetic-Friendly</option>
+                  <option value="High protein Indian">High Protein</option>
+                  <option value="Low calorie Indian">Low Calorie</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label-custom">Special Requirements</label>
+                <textarea class="form-control-custom" id="planSpecial" rows="3"
+                  placeholder="e.g. no onion-garlic, nut allergy, budget-friendly…"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label-custom">Calorie Target</label>
+                <select class="form-control-custom" id="planCalories">
+                  <option value="1200-1400 calories">1200–1400 kcal (Weight Loss)</option>
+                  <option value="1500-1800 calories" selected>1500–1800 kcal (Balanced)</option>
+                  <option value="1800-2200 calories">1800–2200 kcal (Maintenance)</option>
+                  <option value="2200-2800 calories">2200–2800 kcal (Active)</option>
+                  <option value="2800+ calories">2800+ kcal (Bulking)</option>
+                </select>
+              </div>
+              <button class="btn btn-primary-custom w-100" id="generatePlanBtn">
+                <i class="bi bi-magic me-2"></i>Generate Meal Plan
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card-custom h-100">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-journal-text me-2"></i>Your Meal Plan</h6>
+              <button class="btn btn-icon-sm d-none" id="downloadPlan" title="Download plan">
+                <i class="bi bi-download"></i>
+              </button>
+            </div>
+            <div class="card-body-custom meal-plan-output" id="mealPlanOutput">
+              <div class="empty-state">
+                <i class="bi bi-calendar-plus"></i>
+                <p>Configure settings and click <strong>Generate Meal Plan</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────  BMI SECTION  ────────── -->
+    <section class="content-section d-none" id="section-bmi">
+      <div class="section-header mb-4">
+        <h2><i class="bi bi-bar-chart-line me-2 text-accent"></i>BMI &amp; Calorie Calculator</h2>
+        <p class="text-muted">Calculate your BMI and personalised calorie needs</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="card-custom">
+            <div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-calculator me-2"></i>Your Measurements</h6></div>
+            <div class="card-body-custom">
+              <div class="row g-3">
+                <div class="col-6">
+                  <label class="form-label-custom">Weight (kg)</label>
+                  <input type="number" class="form-control-custom" id="bmiWeight" placeholder="65" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">Height (cm)</label>
+                  <input type="number" class="form-control-custom" id="bmiHeight" placeholder="165" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">Age</label>
+                  <input type="number" class="form-control-custom" id="bmiAge" placeholder="25" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">Gender</label>
+                  <select class="form-control-custom" id="bmiGender">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label-custom">Activity Level</label>
+                  <select class="form-control-custom" id="bmiActivity">
+                    <option value="sedentary">Sedentary (desk job, no exercise)</option>
+                    <option value="light">Light (1-3 days/week)</option>
+                    <option value="moderate" selected>Moderate (3-5 days/week)</option>
+                    <option value="active">Active (6-7 days/week)</option>
+                    <option value="very_active">Very Active (athlete)</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label-custom">Goal</label>
+                  <select class="form-control-custom" id="bmiGoal">
+                    <option value="weight_loss">Weight Loss</option>
+                    <option value="balanced" selected>Balanced / Maintenance</option>
+                    <option value="muscle_gain">Muscle Gain</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <button class="btn btn-primary-custom w-100" id="calcBmiBtn">
+                    <i class="bi bi-calculator me-2"></i>Calculate
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div id="bmiResults" class="d-none">
+            <!-- BMI card -->
+            <div class="card-custom mb-4">
+              <div class="card-body-custom">
+                <div class="bmi-result-display" id="bmiDisplay">
+                  <div class="bmi-gauge-wrap">
+                    <div class="bmi-number" id="bmiNumber">–</div>
+                    <div class="bmi-category badge" id="bmiCategory">–</div>
+                  </div>
+                  <div class="bmi-scale mt-3">
+                    <div class="bmi-range range-under"><span>Underweight</span><small>&lt;18.5</small></div>
+                    <div class="bmi-range range-normal"><span>Normal</span><small>18.5–25</small></div>
+                    <div class="bmi-range range-over"><span>Overweight</span><small>25–30</small></div>
+                    <div class="bmi-range range-obese"><span>Obese</span><small>&gt;30</small></div>
+                  </div>
+                  <div class="bmi-needle" id="bmiNeedle"></div>
+                </div>
+              </div>
+            </div>
+            <!-- TDEE card -->
+            <div class="card-custom">
+              <div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-fire me-2"></i>Daily Calorie Needs</h6></div>
+              <div class="card-body-custom">
+                <div class="row g-3" id="tdeeDisplay"></div>
+                <hr class="divider" />
+                <div class="row g-2 mt-1" id="macroDisplay2"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-custom" id="bmiPlaceholder">
+            <div class="card-body-custom">
+              <div class="empty-state">
+                <i class="bi bi-bar-chart-line"></i>
+                <p>Fill in your measurements and click <strong>Calculate</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────  FAMILY PROFILES SECTION  ────────── -->
+    <section class="content-section d-none" id="section-family">
+      <div class="section-header mb-4">
+        <h2><i class="bi bi-people me-2 text-accent"></i>Family Nutrition Profiles</h2>
+        <p class="text-muted">Add family members and get personalised meal plans for everyone</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="card-custom">
+            <div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-person-plus me-2"></i>Add Family Member</h6></div>
+            <div class="card-body-custom">
+              <div class="mb-3">
+                <label class="form-label-custom">Name</label>
+                <input type="text" class="form-control-custom" id="famName" placeholder="e.g. Priya" />
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label-custom">Age</label>
+                  <input type="number" class="form-control-custom" id="famAge" placeholder="30" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label-custom">Gender</label>
+                  <select class="form-control-custom" id="famGender">
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2">
+                <label class="form-label-custom">Health Goal</label>
+                <select class="form-control-custom" id="famGoal">
+                  <option value="healthy eating">Healthy Eating</option>
+                  <option value="weight loss">Weight Loss</option>
+                  <option value="muscle gain">Muscle Gain</option>
+                  <option value="child nutrition">Child Nutrition</option>
+                  <option value="senior nutrition">Senior Nutrition</option>
+                  <option value="pregnancy nutrition">Pregnancy</option>
+                  <option value="diabetic management">Diabetic Management</option>
+                </select>
+              </div>
+              <div class="mt-2">
+                <label class="form-label-custom">Dietary Restrictions</label>
+                <input type="text" class="form-control-custom" id="famRestrictions"
+                  placeholder="e.g. no dairy, nut allergy" />
+              </div>
+              <button class="btn btn-primary-custom w-100 mt-3" id="addFamilyMember">
+                <i class="bi bi-plus-circle me-2"></i>Add Member
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card-custom mb-4">
+            <div class="card-header-custom d-flex justify-content-between">
+              <h6 class="mb-0"><i class="bi bi-people me-2"></i>Family Members</h6>
+              <span class="badge-count" id="memberCount">0 members</span>
+            </div>
+            <div class="card-body-custom" id="familyMembersList">
+              <div class="empty-state">
+                <i class="bi bi-people-fill"></i>
+                <p>No family members added yet</p>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-3">
+            <button class="btn btn-primary-custom flex-grow-1" id="getFamilyPlan">
+              <i class="bi bi-magic me-2"></i>Generate Family Nutrition Plan
+            </button>
+            <button class="btn btn-outline-custom" id="clearFamily">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+          <div class="card-custom mt-4 d-none" id="familyPlanCard">
+            <div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-journal-text me-2"></i>Family Plan</h6></div>
+            <div class="card-body-custom markdown-body" id="familyPlanOutput"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────  FOOD ANALYZER SECTION  ────────── -->
+    <section class="content-section d-none" id="section-analyze">
+      <div class="section-header mb-4">
+        <h2><i class="bi bi-search me-2 text-accent"></i>Food Calorie Analyzer</h2>
+        <p class="text-muted">Get detailed nutrition analysis for any Indian food or meal</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="card-custom">
+            <div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-input-cursor-text me-2"></i>Enter Your Meal</h6></div>
+            <div class="card-body-custom">
+              <textarea class="form-control-custom" id="analyzeInput" rows="6"
+                placeholder="e.g.&#10;2 rotis with dal&#10;1 katori rajma&#10;1 cup basmati rice&#10;1 glass lassi"></textarea>
+              <div class="mt-3">
+                <p class="form-label-custom mb-2">Quick Add:</p>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="tag-btn" data-food="2 rotis with dal and sabzi">Dal Roti</button>
+                  <button class="tag-btn" data-food="1 plate idli sambar (4 idlis)">Idli Sambar</button>
+                  <button class="tag-btn" data-food="1 plate biryani (chicken, 1 serving)">Biryani</button>
+                  <button class="tag-btn" data-food="1 bowl poha with chai">Poha + Chai</button>
+                  <button class="tag-btn" data-food="1 bowl rajma rice">Rajma Rice</button>
+                  <button class="tag-btn" data-food="2 dosas with coconut chutney">Masala Dosa</button>
+                </div>
+              </div>
+              <button class="btn btn-primary-custom w-100 mt-4" id="analyzeBtn">
+                <i class="bi bi-search me-2"></i>Analyze Nutrition
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card-custom h-100">
+            <div class="card-header-custom"><h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Analysis Results</h6></div>
+            <div class="card-body-custom analyze-output markdown-body" id="analyzeOutput">
+              <div class="empty-state">
+                <i class="bi bi-pie-chart"></i>
+                <p>Enter a meal and click <strong>Analyze Nutrition</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /container -->
+</main>
+
+<!-- ══════════════════  LOADING OVERLAY  ══════════════════ -->
+<div class="loading-overlay d-none" id="loadingOverlay">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <p class="loading-text" id="loadingText">Generating with AI…</p>
+  </div>
+</div>
+
+<!-- ══════════════════  TOAST NOTIFICATIONS  ══════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════  FOOTER  ══════════════════ -->
+<footer class="app-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="d-flex align-items-center gap-2">
+        <div class="brand-icon sm"><i class="bi bi-activity"></i></div>
+        <span class="fw-600">NutriBot</span>
+        <span class="text-muted">·</span>
+        <span class="text-muted">Powered by IBM Watsonx.ai Granite</span>
+      </div>
+      <div class="footer-links">
+        <span class="text-muted small">⚠ Not a substitute for medical advice</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════════  LOGIN MODAL  ══════════════════ -->
+<div class="auth-modal-overlay d-none" id="loginModalOverlay">
+  <div class="auth-modal" id="loginModal">
+    <button class="auth-modal-close" id="closeLoginModal"><i class="bi bi-x-lg"></i></button>
+
+    <div class="auth-modal-brand">
+      <div class="brand-icon"><i class="bi bi-activity"></i></div>
+      <span class="brand-name">Nutri<span class="text-accent">Bot</span></span>
+    </div>
+
+    <h2 class="auth-modal-title">Welcome back</h2>
+    <p class="auth-modal-sub">Log in to your NutriBot account</p>
+
+    <!-- Social login row -->
+    <div class="social-login-row">
+      <button class="btn-social" id="googleLoginBtn">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <div class="auth-divider"><span>or continue with email</span></div>
+
+    <div class="auth-form" id="loginForm">
+      <div class="auth-field" id="loginEmailField">
+        <label class="auth-label">Email address</label>
+        <div class="auth-input-wrap">
+          <i class="bi bi-envelope auth-input-icon"></i>
+          <input type="email" class="auth-input" id="loginEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="auth-field-error" id="loginEmailError"></div>
+      </div>
+      <div class="auth-field" id="loginPasswordField">
+        <label class="auth-label">Password</label>
+        <div class="auth-input-wrap">
+          <i class="bi bi-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" />
+          <button type="button" class="auth-eye-btn" data-target="loginPassword"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="auth-field-error" id="loginPasswordError"></div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <label class="auth-remember">
+          <input type="checkbox" id="loginRemember" /> Remember me
+        </label>
+        <a class="auth-forgot" href="#" id="forgotPasswordLink">Forgot password?</a>
+      </div>
+      <button class="btn btn-auth-submit" id="loginSubmitBtn">
+        <span class="btn-label">Log In</span>
+        <span class="btn-spinner d-none"><i class="bi bi-arrow-clockwise spin-icon"></i></span>
+      </button>
+    </div>
+
+    <p class="auth-switch">Don't have an account? <a href="#" id="switchToSignup">Sign up free</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════  SIGN UP MODAL  ══════════════════ -->
+<div class="auth-modal-overlay d-none" id="signupModalOverlay">
+  <div class="auth-modal" id="signupModal">
+    <button class="auth-modal-close" id="closeSignupModal"><i class="bi bi-x-lg"></i></button>
+
+    <div class="auth-modal-brand">
+      <div class="brand-icon"><i class="bi bi-activity"></i></div>
+      <span class="brand-name">Nutri<span class="text-accent">Bot</span></span>
+    </div>
+
+    <h2 class="auth-modal-title">Create your account</h2>
+    <p class="auth-modal-sub">Start your personalised nutrition journey today</p>
+
+    <div class="social-login-row">
+      <button class="btn-social" id="googleSignupBtn">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <div class="auth-divider"><span>or sign up with email</span></div>
+
+    <div class="auth-form" id="signupForm">
+      <div class="auth-field-row">
+        <div class="auth-field" id="signupFirstNameField">
+          <label class="auth-label">First name</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-person auth-input-icon"></i>
+            <input type="text" class="auth-input" id="signupFirstName" placeholder="Priya" autocomplete="given-name" />
+          </div>
+          <div class="auth-field-error" id="signupFirstNameError"></div>
+        </div>
+        <div class="auth-field" id="signupLastNameField">
+          <label class="auth-label">Last name</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-person auth-input-icon"></i>
+            <input type="text" class="auth-input" id="signupLastName" placeholder="Sharma" autocomplete="family-name" />
+          </div>
+          <div class="auth-field-error" id="signupLastNameError"></div>
+        </div>
+      </div>
+      <div class="auth-field" id="signupEmailField">
+        <label class="auth-label">Email address</label>
+        <div class="auth-input-wrap">
+          <i class="bi bi-envelope auth-input-icon"></i>
+          <input type="email" class="auth-input" id="signupEmail" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="auth-field-error" id="signupEmailError"></div>
+      </div>
+      <div class="auth-field" id="signupPasswordField">
+        <label class="auth-label">Password</label>
+        <div class="auth-input-wrap">
+          <i class="bi bi-lock auth-input-icon"></i>
+          <input type="password" class="auth-input" id="signupPassword" placeholder="Min. 8 characters" autocomplete="new-password" />
+          <button type="button" class="auth-eye-btn" data-target="signupPassword"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="auth-field-error" id="signupPasswordError"></div>
+        <div class="password-strength-wrap" id="passwordStrengthWrap">
+          <div class="password-strength-bar">
+            <div class="strength-fill" id="strengthFill"></div>
+          </div>
+          <span class="strength-label" id="strengthLabel"></span>
+        </div>
+      </div>
+      <div class="auth-field" id="signupConfirmField">
+        <label class="auth-label">Confirm password</label>
+        <div class="auth-input-wrap">
+          <i class="bi bi-lock-fill auth-input-icon"></i>
+          <input type="password" class="auth-input" id="signupConfirm" placeholder="Re-enter password" autocomplete="new-password" />
+          <button type="button" class="auth-eye-btn" data-target="signupConfirm"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="auth-field-error" id="signupConfirmError"></div>
+      </div>
+      <label class="auth-terms">
+        <input type="checkbox" id="signupTerms" />
+        I agree to the <a href="#" class="terms-link">Terms of Service</a> and <a href="#" class="terms-link">Privacy Policy</a>
+      </label>
+      <div class="auth-field-error" id="signupTermsError"></div>
+      <button class="btn btn-auth-submit mt-2" id="signupSubmitBtn">
+        <span class="btn-label">Create Account</span>
+        <span class="btn-spinner d-none"><i class="bi bi-arrow-clockwise spin-icon"></i></span>
+      </button>
+    </div>
+
+    <p class="auth-switch">Already have an account? <a href="#" id="switchToLogin">Log in</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════  EDIT PROFILE MODAL  ══════════════════ -->
+<div class="auth-modal-overlay d-none" id="editProfileOverlay">
+  <div class="auth-modal auth-modal-wide" id="editProfileModal">
+    <button class="auth-modal-close" id="closeEditProfile"><i class="bi bi-x-lg"></i></button>
+    <h2 class="auth-modal-title"><i class="bi bi-person-gear me-2 text-accent"></i>Edit Profile</h2>
+    <p class="auth-modal-sub">Update your account information</p>
+    <div class="auth-form">
+      <div class="auth-field-row">
+        <div class="auth-field">
+          <label class="auth-label">First name</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-person auth-input-icon"></i>
+            <input type="text" class="auth-input" id="editFirstName" />
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Last name</label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-person auth-input-icon"></i>
+            <input type="text" class="auth-input" id="editLastName" />
+          </div>
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <div class="auth-input-wrap">
+          <i class="bi bi-envelope auth-input-icon"></i>
+          <input type="email" class="auth-input" id="editEmail" />
+        </div>
+      </div>
+      <div class="auth-field-row">
+        <div class="auth-field">
+          <label class="auth-label">New password <span style="font-weight:400;color:var(--text-muted)">(leave blank to keep)</span></label>
+          <div class="auth-input-wrap">
+            <i class="bi bi-lock auth-input-icon"></i>
+            <input type="password" class="auth-input" id="editPassword" placeholder="••••••••" />
+            <button type="button" class="auth-eye-btn" data-target="editPassword"><i class="bi bi-eye"></i></button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-auth-submit mt-1" id="editProfileSaveBtn">
+        <span class="btn-label">Save Changes</span>
+        <span class="btn-spinner d-none"><i class="bi bi-arrow-clockwise spin-icon"></i></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Marked.js for markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
