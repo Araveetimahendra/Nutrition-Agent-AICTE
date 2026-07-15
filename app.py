@@ -45,16 +45,35 @@ def get_watsonx_model():
     global _watsonx_model
     if _watsonx_model is None:
         api_key    = os.getenv("IBM_API_KEY")
+        username   = os.getenv("WATSONX_USERNAME")
+        password   = os.getenv("WATSONX_PASSWORD")
         project_id = os.getenv("WATSONX_PROJECT_ID")
         url        = os.getenv("WATSONX_URL", "https://eu-gb.ml.cloud.ibm.com")
         model_id   = os.getenv("WATSONX_MODEL_ID", "meta-llama/llama-3-3-70b-instruct")
+        version    = os.getenv("WATSONX_VERSION")
 
-        if not api_key or not project_id:
+        if not project_id:
+            raise ValueError("WATSONX_PROJECT_ID must be set in .env")
+
+        # CP4D on-prem: requires username + password (or username + api_key)
+        # IBM Cloud SaaS: requires api_key only
+        cred_kwargs = dict(url=url)
+        if username and password:
+            cred_kwargs["username"] = username
+            cred_kwargs["password"] = password
+        elif username and api_key:
+            cred_kwargs["username"] = username
+            cred_kwargs["api_key"]  = api_key
+        elif api_key:
+            cred_kwargs["api_key"]  = api_key
+        else:
             raise ValueError(
-                "IBM_API_KEY and WATSONX_PROJECT_ID must be set in .env"
+                "Set either IBM_API_KEY (IBM Cloud) or "
+                "WATSONX_USERNAME + WATSONX_PASSWORD (CP4D) in .env"
             )
-
-        credentials = Credentials(url=url, api_key=api_key)
+        if version:
+            cred_kwargs["version"] = version
+        credentials = Credentials(**cred_kwargs)
         client = APIClient(credentials=credentials, project_id=project_id)
 
         _watsonx_model = ModelInference(
