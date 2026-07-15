@@ -1,0 +1,89 @@
+{
+  "name": "Nutrition Agent",
+  "description": "An IBM Watsonx.ai-powered AI Nutrition Agent (NutriBot) specialised in Indian and South-Asian cuisine, Ayurvedic principles, and evidence-based dietetics.",
+  "keywords": [
+    "nutrition",
+    "ai",
+    "ibm-watsonx",
+    "flask",
+    "indian-food",
+    "meal-planning"
+  ],
+  "website": "",
+  "repository": "",
+  "logo": "",
+  "stack": "heroku-22",
+
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+
+  "scripts": {
+    "postdeploy": "echo 'NutriBot deployed successfully!'"
+  },
+
+  "env": {
+    "IBM_API_KEY": {
+      "description": "IBM Cloud API Key. Create one at https://cloud.ibm.com/iam/apikeys",
+      "required": true
+    },
+    "WATSONX_PROJECT_ID": {
+      "description": "IBM Watsonx.ai Project ID. Found in your Watsonx project settings.",
+      "required": true
+    },
+    "WATSONX_URL": {
+      "description": "Watsonx.ai endpoint URL for your region (e.g. https://eu-gb.ml.cloud.ibm.com).",
+      "value": "https://eu-gb.ml.cloud.ibm.com",
+      "required": true
+    },
+    "WATSONX_MODEL_ID": {
+      "description": "Watsonx model ID to use for inference (e.g. meta-llama/llama-3-3-70b-instruct).",
+      "value": "meta-llama/llama-3-3-70b-instruct",
+      "required": true
+    },
+    "FLASK_SECRET_KEY": {
+      "description": "Flask session secret key. Use a long random string in production.",
+      "generator": "secret",
+      "required": true
+    },
+    "FLASK_ENV": {
+      "description": "Flask environment. Use 'production' for deployed apps.",
+      "value": "production",
+      "required": false
+    },
+    "PORT": {
+      "description": "Port the Flask app listens on.",
+      "value": "5000",
+      "required": false
+    }
+  },
+
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+
+  "addons": [],
+
+  "engines": {
+    "python": "3.11.x"
+  },
+
+  "image": "heroku/python",
+
+  "environments": {
+    "test": {
+      "env": {
+        "FLASK_ENV": "development",
+        "PORT": "5000"
+      },
+      "scripts": {
+        "test": "python -m pytest tests/ -v"
+      }
+    }
+  }
+}
