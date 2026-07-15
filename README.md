@@ -2,7 +2,11 @@
 ### Powered by IBM Watsonx.ai Granite Models + Python Flask
 
 ---
+# 🌐 Live Demo
 
+**🔗 Live Application:** https://nutrition-agent-aicte.onrender.com
+
+---
 ## ✨ Features
 
 | Feature | Description |
